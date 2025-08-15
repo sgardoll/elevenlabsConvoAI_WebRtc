@@ -172,13 +172,22 @@ class WebRTCConnectionManager {
   };
 
   // Fallback media constraints for compatibility
+  // Simple, reliable constraints that work across most devices
   static const Map<String, dynamic> _fallbackMediaConstraints = {
     'audio': {
+      // Basic WebRTC audio processing
       'echoCancellation': true,
       'noiseSuppression': true,
       'autoGainControl': true,
+
+      // ElevenLabs requirements
       'sampleRate': 16000,
       'channelCount': 1,
+
+      // Opus codec optimization (compatible settings)
+      'opusMaxPlaybackRate': 16000,
+      'opusFec': true, // Forward error correction
+      'opusDtx': false, // Disable DTX for better compatibility
     },
     'video': false,
   };
@@ -202,7 +211,8 @@ class WebRTCConnectionManager {
   // Configuration management
   Map<String, dynamic>? _customConfiguration;
   Map<String, dynamic>? _customMediaConstraints;
-  bool _useProductionConfig = true;
+  bool _useProductionConfig =
+      false; // Default to fallback constraints for device compatibility
 
   // Event handlers
   Function(RTCIceCandidate)? onIceCandidate;
@@ -288,6 +298,107 @@ class WebRTCConnectionManager {
     print('⚙️ ${enabled ? 'Enabling' : 'Disabling'} production mode...');
     _useProductionConfig = enabled;
     print('✅ Production mode ${enabled ? 'enabled' : 'disabled'}');
+    if (enabled) {
+      print('   - Using advanced ElevenLabs media constraints');
+      print(
+          '   - ⚠️ Note: Complex constraints may cause issues on some devices');
+    } else {
+      print('   - Using simplified fallback media constraints');
+      print('   - ✅ Better device compatibility, basic audio quality');
+    }
+  }
+
+  /// Enable compatibility mode for better device support
+  /// This uses simplified media constraints that work on most devices
+  void enableCompatibilityMode() {
+    print('🛡️ Enabling compatibility mode for better device support...');
+    setProductionMode(false);
+    print('✅ Compatibility mode enabled');
+    print('   - Simplified media constraints active');
+    print('   - Reduced audio processing complexity');
+    print('   - Better cross-device compatibility');
+  }
+
+  /// Enable debug mode with verbose logging and fallback constraints
+  void enableDebugMode() {
+    print('🐛 Enabling debug mode...');
+    enableCompatibilityMode();
+    print('✅ Debug mode enabled');
+    print('   - Using fallback media constraints for stability');
+    print('   - Enhanced logging active');
+    print('   - Device compatibility prioritized over optimization');
+  }
+
+  /// Optimize SDP for Opus codec preference (ElevenLabs requirement)
+  /// This method can be called to modify SDP offers/answers to prefer Opus codec
+  String optimizeSDPForOpus(String sdp) {
+    print('🎵 Optimizing SDP for Opus codec preference...');
+
+    // Split SDP into lines for processing
+    final lines = sdp.split('\r\n');
+    final optimizedLines = <String>[];
+
+    // Track audio media section
+    bool inAudioSection = false;
+    String? audioMLine;
+    final List<String> audioCodecs = [];
+    final List<String> opusPayloads = [];
+
+    for (final line in lines) {
+      if (line.startsWith('m=audio')) {
+        inAudioSection = true;
+        audioMLine = line;
+        // Extract payload types from m=audio line
+        final parts = line.split(' ');
+        if (parts.length > 3) {
+          audioCodecs.addAll(parts.sublist(3));
+        }
+      } else if (line.startsWith('m=')) {
+        inAudioSection = false;
+      }
+
+      // Find Opus codec payload types
+      if (inAudioSection &&
+          line.contains('rtpmap') &&
+          line.toLowerCase().contains('opus')) {
+        final match = RegExp(r'a=rtpmap:(\d+)\s+opus', caseSensitive: false)
+            .firstMatch(line);
+        if (match != null) {
+          opusPayloads.add(match.group(1)!);
+          print('   - Found Opus codec with payload type: ${match.group(1)}');
+        }
+      }
+
+      optimizedLines.add(line);
+    }
+
+    // Reorder codecs to prefer Opus
+    if (audioMLine != null && opusPayloads.isNotEmpty) {
+      print('   - Reordering audio codecs to prefer Opus...');
+      final parts = audioMLine.split(' ');
+      if (parts.length > 3) {
+        final nonOpusCodecs = audioCodecs
+            .where((codec) => !opusPayloads.contains(codec))
+            .toList();
+        final reorderedCodecs = [...opusPayloads, ...nonOpusCodecs];
+
+        final newMLine =
+            '${parts.sublist(0, 3).join(' ')} ${reorderedCodecs.join(' ')}';
+
+        // Replace the m=audio line in optimizedLines
+        for (int i = 0; i < optimizedLines.length; i++) {
+          if (optimizedLines[i].startsWith('m=audio')) {
+            optimizedLines[i] = newMLine;
+            print('   - Updated m=audio line: $newMLine');
+            break;
+          }
+        }
+      }
+    }
+
+    final optimizedSDP = optimizedLines.join('\r\n');
+    print('✅ SDP optimized for Opus codec preference');
+    return optimizedSDP;
   }
 
   /// Get current configuration (for debugging)

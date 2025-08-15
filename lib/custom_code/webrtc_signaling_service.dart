@@ -76,21 +76,7 @@ class WebRTCSignalingService {
       try {
         _sendElevenLabsInitializationMessage();
         print('✅ Conversation initialization sent');
-
-        // Start a fallback timer in case no conversation metadata is received
-        print('⏰ Starting fallback WebRTC initialization timer (5 seconds)...');
-        Timer(Duration(seconds: 5), () {
-          if (!_webrtcInitialized) {
-            print(
-                '⏰ Fallback timer triggered - starting WebRTC initialization');
-            _initializeWebRTCConnection().catchError((error) {
-              print('❌ Fallback WebRTC initialization failed: $error');
-              onError?.call('Fallback WebRTC initialization failed: $error');
-            });
-          } else {
-            print('⏰ Fallback timer triggered but WebRTC already initialized');
-          }
-        });
+        print('⏳ Waiting for conversation metadata to start WebRTC...');
       } catch (initError) {
         print('❌ Failed to send ElevenLabs initialization: $initError');
         onError
@@ -169,8 +155,9 @@ class WebRTCSignalingService {
           print('🔗 Connection type message received:');
           print('   - Connection type: ${message['connectionType']}');
           if (message['connectionType'] == 'webrtc') {
-            print('🚀 Initializing WebRTC connection...');
-            await _initializeWebRTCConnection();
+            print('✅ WebRTC connection type confirmed');
+            print(
+                '⏳ WebRTC will initialize after conversation metadata is received');
           } else {
             print(
                 '⚠️ Unsupported connection type: ${message['connectionType']}');

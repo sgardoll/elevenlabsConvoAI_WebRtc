@@ -114,6 +114,8 @@ class WebRTCAudioHandler {
   bool get autoGainControlEnabled => _autoGainControlEnabled;
   double get noiseSuppressionLevel => _noiseSuppressionLevel;
   double get echoCancellationLevel => _echoCancellationLevel;
+  RTCVideoRenderer? get remoteRenderer => _remoteRenderer;
+  MediaStream? get remoteStream => _remoteStream;
 
   /// Initialize the audio handler with full WebRTC setup
   Future<void> initialize() async {

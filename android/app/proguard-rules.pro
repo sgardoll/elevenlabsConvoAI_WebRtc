@@ -19,6 +19,7 @@
 -keep class org.webrtc.** { *; }
 -keep class org.jni_zero.** { *; }
 
+
 # WebRTC related rules
 # Additional WebRTC related rules
 -keep class org.webrtc.voiceengine.** { *; }

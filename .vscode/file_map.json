@@ -20,7 +20,7 @@
     "new_identifier_name": "SimpleRecordingButton",
     "type": "W",
     "is_deleted": false,
-    "current_checksum": "c3b4c1cffeccfcb4157ad58a74fc3b4c62f49af622e38009cf4084ff5033f0cc",
+    "current_checksum": "05d9add275f65a5eafab7b0c8a6be3326bb1fba902b440fd462a822a31fbe6cb",
     "original_checksum": "c3b4c1cffeccfcb4157ad58a74fc3b4c62f49af622e38009cf4084ff5033f0cc"
   },
   "custom_functions.dart": {
@@ -38,5 +38,12 @@
     "is_deleted": false,
     "current_checksum": "10327181c9c7ce3f309a02b187495c5ac1397d8a7cbd973265383d5204c0a63f",
     "original_checksum": "10327181c9c7ce3f309a02b187495c5ac1397d8a7cbd973265383d5204c0a63f"
+  },
+  "rtc_video_view_widget.dart": {
+    "old_identifier_name": "RtcVideoViewWidget",
+    "new_identifier_name": "RTCVideoViewWidget",
+    "type": "W",
+    "is_deleted": false,
+    "current_checksum": "c9f714e7b89002770650c04a83cfda274ac9552c63dc5c34fbe44eef953c3234"
   }
 }

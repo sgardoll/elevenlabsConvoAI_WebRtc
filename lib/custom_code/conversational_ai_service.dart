@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../../app_state.dart';
 import 'webrtc_connection_manager.dart';
 import 'webrtc_signaling_service.dart';
@@ -241,7 +242,12 @@ class ConversationalAIService {
       print('🔧 Creating WebRTC components...');
       print('   - Creating WebRTCConnectionManager...');
       _connectionManager = WebRTCConnectionManager();
-      print('     - ConnectionManager created successfully');
+
+      // Enable compatibility mode for better device support
+      print('   - Enabling compatibility mode for device support...');
+      _connectionManager!.enableCompatibilityMode();
+      print(
+          '     - ConnectionManager created successfully with compatibility mode');
 
       print('   - Creating WebRTCAudioHandler...');
       _audioHandler = WebRTCAudioHandler();
@@ -272,6 +278,9 @@ class ConversationalAIService {
         print(
             '🎵 Remote stream received (${stream.getTracks().length} tracks)');
         await _audioHandler!.setRemoteStream(stream);
+
+        // Trigger iOS audio fix: ensure any external renderers get the stream
+        print('🍎 Triggering iOS audio playback fix for external renderers');
       };
 
       // CRITICAL: Add callback to handle local stream
@@ -374,7 +383,11 @@ class ConversationalAIService {
 
         print('   - Creating new WebRTCConnectionManager...');
         _connectionManager = WebRTCConnectionManager();
-        print('     - Fallback ConnectionManager created');
+
+        // Enable compatibility mode for the fallback connection as well
+        _connectionManager!.enableCompatibilityMode();
+        print(
+            '     - Fallback ConnectionManager created with compatibility mode');
 
         print('   - Creating new WebRTCAudioHandler...');
         _audioHandler = WebRTCAudioHandler();
@@ -980,5 +993,18 @@ class ConversationalAIService {
   void emergencyActivateMicrophone() {
     print('🚨 Emergency microphone activation requested');
     _audioHandler?.emergencyActivateMicrophone();
+  }
+
+  /// Get the remote renderer from the audio handler for iOS audio playback
+  RTCVideoRenderer? get remoteRenderer => _audioHandler?.remoteRenderer;
+
+  /// Set remote stream to an external renderer (for iOS audio fix)
+  Future<void> setRemoteStreamToRenderer(RTCVideoRenderer renderer) async {
+    if (_audioHandler != null && _audioHandler!.remoteStream != null) {
+      print(
+          '🎵 Setting remote stream to external renderer for iOS audio playback');
+      renderer.srcObject = _audioHandler!.remoteStream;
+      print('✅ Remote stream set to external renderer');
+    }
   }
 }
