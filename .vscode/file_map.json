@@ -12,8 +12,8 @@
     "new_identifier_name": "getCredentials",
     "type": "A",
     "is_deleted": false,
-    "current_checksum": "e2d6a054ac0acb09273b86ba187386582fd651cae100baef5ad2bff49d8ec6f3",
-    "original_checksum": "e2d6a054ac0acb09273b86ba187386582fd651cae100baef5ad2bff49d8ec6f3"
+    "current_checksum": "6e244d0f665c0558a50000631ce527c0412e235835c0d9dd4e24cd80b61182f1",
+    "original_checksum": "6e244d0f665c0558a50000631ce527c0412e235835c0d9dd4e24cd80b61182f1"
   },
   "simple_recording_button.dart": {
     "old_identifier_name": "SimpleRecordingButton",
