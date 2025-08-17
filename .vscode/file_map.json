@@ -12,7 +12,7 @@
     "new_identifier_name": "getCredentials",
     "type": "A",
     "is_deleted": false,
-    "current_checksum": "c489257063c1ee234a4372b29f30c063b7b1356dbdb72814f0d5964a97c07bb0",
+    "current_checksum": "03db4b00a75ef1943ec8d28cac40a1c101f8f28e9f12f089c153ecb903a70a66",
     "original_checksum": "c489257063c1ee234a4372b29f30c063b7b1356dbdb72814f0d5964a97c07bb0"
   },
   "simple_recording_button.dart": {
@@ -28,7 +28,7 @@
     "new_identifier_name": "RTCVideoViewWidget",
     "type": "W",
     "is_deleted": false,
-    "current_checksum": "19ab4679b0d415d6840295c1fe4abdb13799ccb3536d7c64a796a40f9c1e94c5",
+    "current_checksum": "2bd96d505ad2be68790bfb149eeffa0057bee46bc554ca8827d3537cab0d349d",
     "original_checksum": "19ab4679b0d415d6840295c1fe4abdb13799ccb3536d7c64a796a40f9c1e94c5"
   },
   "custom_functions.dart": {
@@ -44,7 +44,7 @@
     "new_identifier_name": "pubspec.yaml",
     "type": "D",
     "is_deleted": false,
-    "current_checksum": "c3a2da1d0eb21d9022a2bdb7afbf044b68d1a50e510257bb8e79f9ebf35dadc2",
+    "current_checksum": "eec1b5e3b83b3c3c777ec276544b5a21fe34257c9d6488122559b68bb2c0efb6",
     "original_checksum": "bf6b36c3437f4988bf84e63cf052dcb49b8376f5a1794489d304b7d0d4943211"
   }
 }

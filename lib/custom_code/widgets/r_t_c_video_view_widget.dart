@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import '/custom_code/conversational_ai_service.dart';
+import '../conversational_ai_service.dart';
 import 'dart:async';
 
 /// Custom widget for iOS audio playback fix using hidden RTCVideoView This

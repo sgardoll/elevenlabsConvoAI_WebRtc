@@ -92,6 +92,18 @@ class ElevenLabsAuthService {
     }
   }
 
+  Future<void> fetchAndStoreCredentials(String agentId, String endpoint) async {
+    try {
+      await setAgentConfiguration(agentId, endpoint);
+      final credentials = await _requestCredentialsWithRetry(endpoint, agentId);
+      await _storeCredentials(credentials);
+      _updateAppState(credentials);
+    } catch (e) {
+      print('❌ Error fetching and storing credentials: $e');
+      rethrow;
+    }
+  }
+
   /// Store API key securely
   Future<void> setApiKey(String apiKey) async {
     print('🔐 Storing ElevenLabs API key securely...');

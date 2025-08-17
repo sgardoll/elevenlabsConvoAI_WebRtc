@@ -347,7 +347,8 @@ class WebRTCConnectionManager {
 
   /// Get current configuration (for debugging)
   Map<String, dynamic> getCurrentConfiguration() {
-    return Map<String, dynamic>.from(_customConfiguration ?? _baseConfiguration);
+    return Map<String, dynamic>.from(
+        _customConfiguration ?? _baseConfiguration);
   }
 
   /// Get current media constraints (for debugging)

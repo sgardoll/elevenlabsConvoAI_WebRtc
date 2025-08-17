@@ -344,12 +344,13 @@ class WebRTCAudioHandler {
         try {
           final session = await AudioSession.instance;
           await session.setActive(true);
-          
+
           // Force audio to speakers if speaker mode is enabled
           if (_isSpeakerOn) {
             await session.configure(session.configuration!.copyWith(
-              avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.defaultToSpeaker |
-                  AVAudioSessionCategoryOptions.allowBluetooth,
+              avAudioSessionCategoryOptions:
+                  AVAudioSessionCategoryOptions.defaultToSpeaker |
+                      AVAudioSessionCategoryOptions.allowBluetooth,
             ));
           }
           print('✅ iOS audio session activated for remote playback');
@@ -561,17 +562,19 @@ class WebRTCAudioHandler {
   Future<void> _configureIOSAudioSession() async {
     print('🍎 Starting iOS audio session configuration...');
     print('   - Timestamp: ${DateTime.now().toIso8601String()}');
-    
+
     try {
       // Use audio_session package for proper iOS configuration
       final session = await AudioSession.instance;
       await session.configure(AudioSessionConfiguration(
         avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
-        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.allowBluetooth |
-            AVAudioSessionCategoryOptions.defaultToSpeaker |
-            AVAudioSessionCategoryOptions.allowAirPlay,
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.allowBluetooth |
+                AVAudioSessionCategoryOptions.defaultToSpeaker |
+                AVAudioSessionCategoryOptions.allowAirPlay,
         avAudioSessionMode: AVAudioSessionMode.videoChat,
-        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.defaultPolicy,
         avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
         androidAudioAttributes: const AndroidAudioAttributes(
           contentType: AndroidAudioContentType.speech,
@@ -581,10 +584,12 @@ class WebRTCAudioHandler {
         androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
         androidWillPauseWhenDucked: false,
       ));
-      
+
       await session.setActive(true);
-      print('✅ iOS audio session configured successfully with audio_session package');
-      print('   - Configuration completed at: ${DateTime.now().toIso8601String()}');
+      print(
+          '✅ iOS audio session configured successfully with audio_session package');
+      print(
+          '   - Configuration completed at: ${DateTime.now().toIso8601String()}');
     } catch (e) {
       print('❌ Failed to configure iOS audio session: $e');
       print('   - Error type: ${e.runtimeType}');
@@ -638,8 +643,8 @@ class WebRTCAudioHandler {
       await session.configure(AudioSessionConfiguration(
         androidAudioAttributes: AndroidAudioAttributes(
           contentType: AndroidAudioContentType.speech,
-          usage: _isSpeakerOn 
-              ? AndroidAudioUsage.voiceCommunication 
+          usage: _isSpeakerOn
+              ? AndroidAudioUsage.voiceCommunication
               : AndroidAudioUsage.voiceCommunication,
         ),
         androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
@@ -1006,7 +1011,7 @@ class WebRTCAudioHandler {
       await session.configure(AudioSessionConfiguration(
         androidAudioAttributes: AndroidAudioAttributes(
           contentType: AndroidAudioContentType.speech,
-          usage: _isSpeakerOn 
+          usage: _isSpeakerOn
               ? AndroidAudioUsage.media
               : AndroidAudioUsage.voiceCommunication,
         ),
@@ -1058,7 +1063,7 @@ class WebRTCAudioHandler {
   /// STEP 8: Stream synchronization helper
   Future<void> syncAudioStreams() async {
     print('🔄 Synchronizing audio streams...');
-    
+
     try {
       // Ensure local stream is active
       if (_localStream != null) {
@@ -1066,20 +1071,20 @@ class WebRTCAudioHandler {
           track.enabled = !_isMuted && !_isAgentSpeaking;
         }
       }
-      
+
       // Ensure remote stream is active
       if (_remoteStream != null) {
         for (final track in _remoteStream!.getAudioTracks()) {
           track.enabled = true;
         }
-        
+
         // Set up proper audio session for playback
         if (Platform.isIOS) {
           final session = await AudioSession.instance;
           await session.setActive(true);
         }
       }
-      
+
       print('✅ Audio streams synchronized successfully');
     } catch (e) {
       print('❌ Failed to sync audio streams: $e');
@@ -1090,7 +1095,7 @@ class WebRTCAudioHandler {
   /// STEP 9: Audio recovery mechanism
   Future<void> recoverAudioConnection() async {
     print('🚨 Attempting audio connection recovery...');
-    
+
     try {
       // Reset audio session
       if (Platform.isIOS) {
@@ -1098,13 +1103,13 @@ class WebRTCAudioHandler {
         await session.setActive(false);
         await session.setActive(true);
       }
-      
+
       // Re-sync audio streams
       await syncAudioStreams();
-      
+
       // Re-enable audio tracks
       emergencyActivateMicrophone();
-      
+
       print('✅ Audio connection recovery completed');
     } catch (e) {
       print('❌ Audio recovery failed: $e');
@@ -1121,19 +1126,19 @@ class WebRTCAudioHandler {
     print('Agent Speaking: $_isAgentSpeaking');
     print('Initialized: $_isInitialized');
     print('Disposed: $_isDisposed');
-    
+
     if (_localStream != null) {
       for (final track in _localStream!.getAudioTracks()) {
         print('Local Audio Track: ${track.id} - Enabled: ${track.enabled}');
       }
     }
-    
+
     if (_remoteStream != null) {
       for (final track in _remoteStream!.getAudioTracks()) {
         print('Remote Audio Track: ${track.id} - Enabled: ${track.enabled}');
       }
     }
-    
+
     // Check audio session state
     if (Platform.isIOS) {
       try {
@@ -1141,12 +1146,13 @@ class WebRTCAudioHandler {
         // audio_session does not expose a direct `active` getter across versions;
         // print whether the session has been configured instead of calling a non-existent getter.
         print('iOS Audio Session Configured: ${session.configuration != null}');
-        print('iOS Audio Session Category: ${session.configuration?.avAudioSessionCategory}');
+        print(
+            'iOS Audio Session Category: ${session.configuration?.avAudioSessionCategory}');
       } catch (e) {
         print('iOS Audio Session Error: $e');
       }
     }
-    
+
     print('🔍 === END DEBUG STATE ===');
   }
 
