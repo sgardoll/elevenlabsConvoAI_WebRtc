@@ -1,2 +1,2 @@
 export 'simple_recording_button.dart' show SimpleRecordingButton;
-export 'rtc_video_view_widget.dart' show RTCVideoViewWidget;
+export 'r_t_c_video_view_widget.dart' show RTCVideoViewWidget;

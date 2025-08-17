@@ -138,6 +138,14 @@ class _ConversationalDemoWidgetState extends State<ConversationalDemoWidget> {
                     pulseAnimation: true,
                   ),
                 ),
+                Container(
+                  width: 1.0,
+                  height: 1.0,
+                  child: custom_widgets.RTCVideoViewWidget(
+                    width: 1.0,
+                    height: 1.0,
+                  ),
+                ),
               ],
             ),
           ),
