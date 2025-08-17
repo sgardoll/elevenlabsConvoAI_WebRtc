@@ -4,24 +4,32 @@
     "new_identifier_name": "initializeConversationService",
     "type": "A",
     "is_deleted": false,
-    "current_checksum": "4ab7d29dd01941f3ae147b8b68a24f8e236b1bb385f0bf3dfaf2a8908f3ed2b3",
-    "original_checksum": "4ab7d29dd01941f3ae147b8b68a24f8e236b1bb385f0bf3dfaf2a8908f3ed2b3"
+    "current_checksum": "6bc5ae4e39fb1098b6b5687c2e00ac8a9989f5057c6724ac8ac9fab006b3a6cf",
+    "original_checksum": "6bc5ae4e39fb1098b6b5687c2e00ac8a9989f5057c6724ac8ac9fab006b3a6cf"
   },
   "get_credentials.dart": {
     "old_identifier_name": "getCredentials",
     "new_identifier_name": "getCredentials",
     "type": "A",
     "is_deleted": false,
-    "current_checksum": "6e244d0f665c0558a50000631ce527c0412e235835c0d9dd4e24cd80b61182f1",
-    "original_checksum": "6e244d0f665c0558a50000631ce527c0412e235835c0d9dd4e24cd80b61182f1"
+    "current_checksum": "c489257063c1ee234a4372b29f30c063b7b1356dbdb72814f0d5964a97c07bb0",
+    "original_checksum": "c489257063c1ee234a4372b29f30c063b7b1356dbdb72814f0d5964a97c07bb0"
   },
   "simple_recording_button.dart": {
     "old_identifier_name": "SimpleRecordingButton",
     "new_identifier_name": "SimpleRecordingButton",
     "type": "W",
     "is_deleted": false,
-    "current_checksum": "05d9add275f65a5eafab7b0c8a6be3326bb1fba902b440fd462a822a31fbe6cb",
-    "original_checksum": "c3b4c1cffeccfcb4157ad58a74fc3b4c62f49af622e38009cf4084ff5033f0cc"
+    "current_checksum": "5eea26ca5a9ca75f558892e9f0607432dcf84c57b21beee21185b756af1ba150",
+    "original_checksum": "5eea26ca5a9ca75f558892e9f0607432dcf84c57b21beee21185b756af1ba150"
+  },
+  "r_t_c_video_view_widget.dart": {
+    "old_identifier_name": "RTCVideoViewWidget",
+    "new_identifier_name": "RTCVideoViewWidget",
+    "type": "W",
+    "is_deleted": false,
+    "current_checksum": "19ab4679b0d415d6840295c1fe4abdb13799ccb3536d7c64a796a40f9c1e94c5",
+    "original_checksum": "19ab4679b0d415d6840295c1fe4abdb13799ccb3536d7c64a796a40f9c1e94c5"
   },
   "custom_functions.dart": {
     "old_identifier_name": "CustomFunctions",
@@ -38,12 +46,5 @@
     "is_deleted": false,
     "current_checksum": "10327181c9c7ce3f309a02b187495c5ac1397d8a7cbd973265383d5204c0a63f",
     "original_checksum": "10327181c9c7ce3f309a02b187495c5ac1397d8a7cbd973265383d5204c0a63f"
-  },
-  "rtc_video_view_widget.dart": {
-    "old_identifier_name": "RtcVideoViewWidget",
-    "new_identifier_name": "RTCVideoViewWidget",
-    "type": "W",
-    "is_deleted": false,
-    "current_checksum": "c9f714e7b89002770650c04a83cfda274ac9552c63dc5c34fbe44eef953c3234"
   }
 }
