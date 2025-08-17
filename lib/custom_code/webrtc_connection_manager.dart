@@ -467,11 +467,11 @@ class WebRTCConnectionManager {
         for (final track in _localStream!.getTracks()) {
           try {
             print(
-                '📤 Adding ${track.kind} track (ID: ${track.id}) to peer connection...');
-            await _peerConnection!.addTrack(track, _localStream!);
+                '📤 Adding ${track.kind} track (ID: ${track.id}, Enabled: ${track.enabled}) to peer connection...');
+            final sender = await _peerConnection!.addTrack(track, _localStream!);
             tracksAdded++;
             print(
-                '✅ Successfully added ${track.kind} track to peer connection');
+                '✅ Successfully added ${track.kind} track to peer connection with sender: ${sender.senderId}');
           } catch (trackError) {
             tracksFailed++;
             print(

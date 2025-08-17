@@ -3,7 +3,28 @@ import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:audio_session/audio_session.dart'; // STEP 1: Add audio_session package
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
+import 'dart:typed_data';
+
+// Custom AudioSource for playing from a byte stream
+class MyCustomSource extends StreamAudioSource {
+  final List<int> bytes;
+  MyCustomSource(this.bytes);
+
+  @override
+  Future<StreamAudioResponse> request([int? start, int? end]) async {
+    start ??= 0;
+    end ??= bytes.length;
+    return StreamAudioResponse(
+      sourceLength: bytes.length,
+      contentLength: end - start,
+      offset: start,
+      stream: Stream.value(bytes.sublist(start, end)),
+      contentType: 'audio/mpeg',
+    );
+  }
+}
 
 class WebRTCAudioHandler {
   // Audio renderers for WebRTC streams
@@ -110,7 +131,20 @@ class WebRTCAudioHandler {
   double get noiseSuppressionLevel => _noiseSuppressionLevel;
   double get echoCancellationLevel => _echoCancellationLevel;
   RTCVideoRenderer? get remoteRenderer => _remoteRenderer;
+  RTCVideoRenderer? get localRenderer => _localRenderer;
   MediaStream? get remoteStream => _remoteStream;
+
+  Future<void> playBase64Audio(String base64String) async {
+    try {
+      final bytes = base64Decode(base64String);
+      final source = MyCustomSource(bytes);
+      await _audioPlayer!.setAudioSource(source);
+      await _audioPlayer!.play();
+    } catch (e) {
+      print('Failed to play base64 audio: $e');
+      onError?.call('Failed to play base64 audio: $e');
+    }
+  }
 
   /// Initialize the audio handler with full WebRTC setup
   Future<void> initialize() async {
@@ -571,7 +605,8 @@ class WebRTCAudioHandler {
         avAudioSessionCategoryOptions:
             AVAudioSessionCategoryOptions.allowBluetooth |
                 AVAudioSessionCategoryOptions.defaultToSpeaker |
-                AVAudioSessionCategoryOptions.allowAirPlay,
+                AVAudioSessionCategoryOptions.allowAirPlay |
+                AVAudioSessionCategoryOptions.mixWithOthers,
         avAudioSessionMode: AVAudioSessionMode.videoChat,
         avAudioSessionRouteSharingPolicy:
             AVAudioSessionRouteSharingPolicy.defaultPolicy,

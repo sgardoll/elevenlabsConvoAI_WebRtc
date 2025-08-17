@@ -4,14 +4,16 @@ import 'dart:io';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'webrtc_connection_manager.dart';
+import 'webrtc_audio_handler.dart';
 
 class WebRTCSignalingService {
   WebSocketChannel? _channel;
   final WebRTCConnectionManager _connectionManager;
+  final WebRTCAudioHandler _audioHandler;
   Function(String)? onError;
   bool _webrtcInitialized = false; // Prevent duplicate initialization
 
-  WebRTCSignalingService(this._connectionManager);
+  WebRTCSignalingService(this._connectionManager, this._audioHandler);
 
   Future<void> connect(String signedUrl, String token) async {
     try {
@@ -477,14 +479,20 @@ class WebRTCSignalingService {
   Future<void> _handleAudioMessage(Map<String, dynamic> message) async {
     try {
       print('🎵 Processing audio message:');
-      print(
-          '   - Audio data size: ${message['audio_event']?['audio_base_64']?.length ?? 0} bytes (base64)');
-      print('   - Event type: ${message['audio_event']?['event_type']}');
+      final audioEvent = message['audio_event'];
+      if (audioEvent != null && audioEvent['audio_base_64'] != null) {
+        final base64String = audioEvent['audio_base_64'];
+        print(
+            '   - Audio data size: ${base64String.length} bytes (base64)');
+        print('   - Event type: ${audioEvent['event_type']}');
 
-      // Audio data is typically in base64 format from ElevenLabs
-      // This would need to be decoded and played through the audio handler
-      // For now, just log the receipt
-      print('✅ Audio message processed successfully');
+        // Play the audio using the audio handler
+        await _audioHandler.playBase64Audio(base64String);
+
+        print('✅ Audio message processed and played successfully');
+      } else {
+        print('⚠️ No audio data found in the message');
+      }
     } catch (e) {
       print('❌ Error processing audio message: $e');
       onError?.call('Failed to process audio message: $e');

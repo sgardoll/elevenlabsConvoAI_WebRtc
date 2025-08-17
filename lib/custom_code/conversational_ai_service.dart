@@ -254,7 +254,7 @@ class ConversationalAIService {
       print('     - AudioHandler created successfully');
 
       print('   - Creating WebRTCSignalingService...');
-      _signalingService = WebRTCSignalingService(_connectionManager!);
+      _signalingService = WebRTCSignalingService(_connectionManager!, _audioHandler!);
       print('     - SignalingService created successfully');
 
       print('✅ All WebRTC components created successfully');
@@ -394,7 +394,7 @@ class ConversationalAIService {
         print('     - Fallback AudioHandler created');
 
         print('   - Creating new WebRTCSignalingService...');
-        _signalingService = WebRTCSignalingService(_connectionManager!);
+        _signalingService = WebRTCSignalingService(_connectionManager!, _audioHandler!);
         print('     - Fallback SignalingService created');
 
         print('🎵 Initializing fallback audio handler...');
@@ -674,54 +674,16 @@ class ConversationalAIService {
       if (newRecordingState) {
         print('🎙️ Starting recording...');
         print('   - Unmuting microphone for audio capture');
-        // If we're starting recording, ensure audio is properly configured
         if (_audioHandler != null) {
-          try {
-            // Unmute the microphone to start recording
-            await _audioHandler!.setMuted(false);
-            print('✅ Microphone unmuted successfully');
-            print('   - Audio handler ready for recording');
-            print(
-                '   - Recording started at: ${DateTime.now().toIso8601String()}');
-          } catch (audioError) {
-            print('❌ Error starting audio recording');
-            print('   - Error: $audioError');
-            print('   - Error type: ${audioError.runtimeType}');
-            print('   - Error timestamp: ${DateTime.now().toIso8601String()}');
-            // Revert state on error
-            _updateState(ConversationState.connected);
-            _updateRecordingState(false);
-            return 'Error starting audio recording: $audioError';
-          }
-        } else {
-          print('⚠️ Audio handler is null, cannot unmute microphone');
-          _updateState(ConversationState.connected);
-          _updateRecordingState(false);
-          return 'Error starting audio recording: Audio handler not available';
+          await _audioHandler!.setMuted(false);
+          print('✅ Microphone unmuted successfully');
         }
       } else {
         print('⏹️ Stopping recording...');
         print('   - Muting microphone to stop audio capture');
-        // If we're stopping recording, ensure audio is properly muted
         if (_audioHandler != null) {
-          try {
-            // Mute the microphone to stop recording
-            await _audioHandler!.setMuted(true);
-            print('✅ Microphone muted successfully');
-            print('   - Audio handler stopped from recording');
-            print(
-                '   - Recording stopped at: ${DateTime.now().toIso8601String()}');
-          } catch (audioError) {
-            print('❌ Error stopping audio recording');
-            print('   - Error: $audioError');
-            print('   - Error type: ${audioError.runtimeType}');
-            print('   - Error timestamp: ${DateTime.now().toIso8601String()}');
-            // Don't revert state as we still want to stop recording
-            return 'Error stopping audio recording: $audioError';
-          }
-        } else {
-          print('⚠️ Audio handler is null, cannot mute microphone');
-          return 'Error stopping audio recording: Audio handler not available';
+          await _audioHandler!.setMuted(true);
+          print('✅ Microphone muted successfully');
         }
       }
 
@@ -997,6 +959,9 @@ class ConversationalAIService {
 
   /// Get the remote renderer from the audio handler for iOS audio playback
   RTCVideoRenderer? get remoteRenderer => _audioHandler?.remoteRenderer;
+
+  /// Get the local renderer from the audio handler
+  RTCVideoRenderer? get localRenderer => _audioHandler?.localRenderer;
 
   /// Set remote stream to an external renderer (for iOS audio fix)
   Future<void> setRemoteStreamToRenderer(RTCVideoRenderer renderer) async {
