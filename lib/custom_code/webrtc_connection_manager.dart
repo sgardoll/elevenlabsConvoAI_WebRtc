@@ -93,82 +93,26 @@ class WebRTCConnectionManager {
   // Based on ElevenLabs requirement: 16kHz mono audio with advanced processing
   static const Map<String, dynamic> _elevenLabsMediaConstraints = {
     'audio': {
-      // Core WebRTC audio processing (cross-platform compatible)
+      // ElevenLabs requirements
+      'sampleRate': 16000,
+      'channelCount': 1,
+      'sampleSize': 16,
+
+      // Essential WebRTC processing
       'echoCancellation': true,
       'noiseSuppression': true,
       'autoGainControl': true,
 
-      // ElevenLabs optimal audio specifications
-      'sampleRate': 16000, // Required: 16kHz sample rate for ElevenLabs
-      'channelCount': 1, // Required: Mono audio for ElevenLabs
-      'sampleSize': 16, // 16-bit audio depth for clarity
+      // Opus codec settings for ElevenLabs
+      'googOpusMaxPlaybackRate': 16000,
+      'googOpusFec': true,
+      'googOpusDtx': false, // Disable for ElevenLabs compatibility
 
-      // Ultra-low latency settings for real-time conversation
-      'latency': 0.005, // 5ms latency target for immediate response
-      'bufferSize': 256, // Small buffer for low latency
-      'volume': 1.0, // Full volume capture
-
-      // Advanced echo cancellation for conversational AI
-      'echoCancellationType': 'system', // Use system-level AEC when available
-      'googEchoCancellation': true,
-      'googDAEchoCancellation': true,
-      'googEchoCancellation2': true,
-      'googAecm': false, // Disable mobile echo cancellation (use full AEC)
-      'googAecRefinerFilterLength': 80, // Optimize filter length for speech
-
-      // Enhanced noise suppression for clear speech recognition
-      'noiseSuppression2': true,
-      'googNoiseSuppression': true,
-      'googNoiseSuppression2': true,
-      'googNoiseSuppressionLevel': 2, // High noise suppression
-      'googResidualEchoDetector': true,
-
-      // Automatic gain control optimized for speech
-      'googAutoGainControl': true,
-      'googAutoGainControl2': true,
-      'googAGCStartUpMinVolume': 15, // Optimized startup volume
-      'googAGCStartUpMinVolume2': 15,
-      'googAudioProcessing64Ms': false, // Use 32ms processing for lower latency
-
-      // Audio enhancement for speech clarity
-      'googHighpassFilter': true,
-      'googTypingNoiseDetection': true,
-      'googAudioMirroring': false,
-      'googBeamforming': true, // Enable beamforming when available
-
-      // Network adaptation and quality optimization
-      'googAudioNetworkAdaptorConfig': '', // Let WebRTC handle adaptation
-      'googCpuOveruseDetection': true,
-      'googCpuUnderuseThreshold': 55,
-      'googCpuOveruseThreshold': 85,
-
-      // Voice activity detection for conversation flow
-      'voiceActivityDetection': true,
-      'googVoiceActivityDetector': true,
-      'googVADProbabilityThreshold': 0.3, // Sensitive VAD for quick detection
-
-      // Quality of Service prioritization
-      'googDscp': true, // Enable DSCP marking for QoS
-      'googSuspendBelowMinBitrate': true,
-
-      // Opus codec optimization for ElevenLabs
-      'opusMaxPlaybackRate': 16000, // Match ElevenLabs sample rate
-      'opusFec': true, // Forward error correction
-      'opusDtx': true, // Discontinuous transmission
-      'opusMaxAverageBitrate': 32000, // Optimize bitrate for speech
-      'opusPtime': 20, // 20ms packet time for balance of latency/efficiency
-
-      // Advanced audio processing flags
-      'googExperimentalEchoCancellation': true,
-      'googExperimentalNoiseSuppression': true,
-      'googExperimentalAutoGainControl': true,
-      'googAudioProcessingAlgorithm': 'ns_speex', // Speex noise suppression
-
-      // Device-specific optimizations
-      'deviceId': 'default', // Use default audio input device
-      'groupId': '', // Auto-select appropriate device group
+      // Low latency settings
+      'latency': 0.020, // 20ms for stability
+      'bufferSize': 512, // Larger buffer for stability
     },
-    'video': false, // Audio-only for conversational AI efficiency
+    'video': false,
   };
 
   // Fallback media constraints for compatibility
@@ -241,7 +185,7 @@ class WebRTCConnectionManager {
   /// Configure custom TURN servers for production deployment
   ///
   /// Example usage:
-  /// ```dart
+  /// ```
   /// connectionManager.configureTurnServers([
   ///   {
   ///     'urls': 'turn:your-turn-server.com:3478',
@@ -276,7 +220,7 @@ class WebRTCConnectionManager {
   /// Configure media constraints for specific use cases
   ///
   /// Example usage:
-  /// ```dart
+  /// ```
   /// connectionManager.configureMediaConstraints({
   ///   'audio': {
   ///     'sampleRate': 48000,
@@ -403,17 +347,16 @@ class WebRTCConnectionManager {
 
   /// Get current configuration (for debugging)
   Map<String, dynamic> getCurrentConfiguration() {
-    return _customConfiguration ?? _baseConfiguration;
+    return Map<String, dynamic>.from(_customConfiguration ?? _baseConfiguration);
   }
 
   /// Get current media constraints (for debugging)
   Map<String, dynamic> getCurrentMediaConstraints() {
-    if (_customMediaConstraints != null) {
-      return _customMediaConstraints!;
-    }
-    return _useProductionConfig
-        ? _elevenLabsMediaConstraints
-        : _fallbackMediaConstraints;
+    final constraints = _customMediaConstraints ??
+        (_useProductionConfig
+            ? _elevenLabsMediaConstraints
+            : _fallbackMediaConstraints);
+    return Map<String, dynamic>.from(constraints);
   }
 
   /// Initialize and create WebRTC peer connection
@@ -706,12 +649,12 @@ class WebRTCConnectionManager {
   /// Get connection statistics
   Future<Map<String, dynamic>> getConnectionStats() async {
     if (_peerConnection == null) {
-      return {};
+      return <String, dynamic>{};
     }
 
     try {
       final reports = await _peerConnection!.getStats();
-      final Map<String, dynamic> result = {};
+      final Map<String, dynamic> result = <String, dynamic>{};
 
       // Handle StatsReport objects returned by getStats()
       for (var report in reports) {
@@ -721,7 +664,7 @@ class WebRTCConnectionManager {
       return result;
     } catch (e) {
       print('Failed to get connection stats: $e');
-      return {};
+      return <String, dynamic>{};
     }
   }
 
@@ -816,7 +759,7 @@ class WebRTCConnectionManager {
         audioQuality = 'good';
       }
 
-      final qualityMetrics = {
+      final qualityMetrics = <String, dynamic>{
         'status': 'connected',
         'quality': audioQuality,
         'latency_ms': latency,
@@ -838,7 +781,7 @@ class WebRTCConnectionManager {
       return qualityMetrics;
     } catch (e) {
       print('❌ Error analyzing connection quality: $e');
-      return {
+      return <String, dynamic>{
         'status': 'error',
         'quality': 'unknown',
         'error': e.toString(),
@@ -965,64 +908,23 @@ class WebRTCConnectionManager {
 
     // Remote stream event
     _peerConnection!.onTrack = (RTCTrackEvent event) {
-      print('🎵 Remote track event received:');
-      print('   - Track kind: ${event.track.kind}');
-      print('   - Track ID: ${event.track.id}');
-      print('   - Track enabled: ${event.track.enabled}');
-      print('   - Number of streams in event: ${event.streams.length}');
-      print('   - Timestamp: ${DateTime.now().toIso8601String()}');
+      print('🎵 Remote track event received: ${event.track.kind}');
 
-      // Log detailed track information
-      if (event.track.kind == 'audio') {
-        print('   - Audio track details:');
-        try {
-          print('     - Settings: ${event.track.getSettings()}');
-        } catch (e) {
-          print('     - Settings: Unable to retrieve settings ($e)');
-        }
-      }
-
-      if (event.streams.isNotEmpty) {
-        print('📡 Processing remote stream from track event...');
+      if (event.streams.isNotEmpty && event.track.kind == 'audio') {
         _remoteStream = event.streams[0];
-        print('✅ Remote stream set successfully');
-        print('   - Stream ID: ${_remoteStream!.id}');
-        print('   - Stream active: ${_remoteStream!.active}');
-        print('   - Track count: ${_remoteStream!.getTracks().length}');
+        print('✅ Remote audio stream set successfully');
 
-        // Log each track in the remote stream with detailed information
-        print('🎵 Remote stream tracks analysis:');
-        for (int i = 0; i < _remoteStream!.getTracks().length; i++) {
-          final track = _remoteStream!.getTracks()[i];
-          print('   - Track $i:');
-          print('     - Kind: ${track.kind}');
-          print('     - ID: ${track.id}');
-          print('     - Enabled: ${track.enabled}');
-
-          // Additional audio track specific logging
-          if (track.kind == 'audio') {
-            try {
-              print('     - Audio settings: ${track.getSettings()}');
-            } catch (e) {
-              print('     - Audio settings: Unable to retrieve settings ($e)');
-            }
-          }
+        // CRITICAL: Ensure audio tracks are enabled
+        for (final track in _remoteStream!.getAudioTracks()) {
+          track.enabled = true;
+          print('✅ Enabled remote audio track: ${track.id}');
         }
 
-        print('📤 Executing remote stream callback...');
+        // Notify audio handler about remote stream
         onRemoteStream?.call(_remoteStream!);
-        print('✅ Remote stream callback executed successfully');
-      } else {
-        print('⚠️ No streams in track event, cannot create remote stream');
-        print(
-            '🔍 Debug info: Track kind=${event.track.kind}, Track ID=${event.track.id}');
-        // Note: We can't create a MediaStream directly as it's an abstract class
-        // The track should be part of a stream from the remote peer
       }
 
-      print('📤 Executing remote track callback...');
       onRemoteTrack?.call(event.track);
-      print('✅ Remote track callback executed successfully');
     };
 
     // Data channel event (not used for audio-only, but included for completeness)
@@ -1207,7 +1109,7 @@ class WebRTCConnectionManager {
       // Determine network condition category
       String networkCondition = 'excellent';
       Map<String, dynamic> optimizedConstraints =
-          Map.from(_elevenLabsMediaConstraints);
+          Map<String, dynamic>.from(_elevenLabsMediaConstraints);
 
       if (packetLoss > 5.0 || latency > 300) {
         networkCondition = 'poor';
@@ -1294,7 +1196,7 @@ class WebRTCConnectionManager {
   /// Get comprehensive connection diagnostics for ElevenLabs optimization
   Future<Map<String, dynamic>> getElevenLabsDiagnostics() async {
     if (_peerConnection == null) {
-      return {
+      return <String, dynamic>{
         'status': 'no_connection',
         'error': 'Peer connection not available'
       };
@@ -1313,7 +1215,7 @@ class WebRTCConnectionManager {
         final values = report.values;
 
         if (values['type'] == 'inbound-rtp' && values['kind'] == 'audio') {
-          audioMetrics = {
+          audioMetrics = <String, dynamic>{
             'packetsReceived': values['packetsReceived'] ?? 0,
             'packetsLost': values['packetsLost'] ?? 0,
             'bytesReceived': values['bytesReceived'] ?? 0,
@@ -1324,7 +1226,7 @@ class WebRTCConnectionManager {
 
         if (values['type'] == 'codec' &&
             values['mimeType']?.contains('audio') == true) {
-          codecInfo = {
+          codecInfo = <String, dynamic>{
             'mimeType': values['mimeType'] ?? 'unknown',
             'clockRate': values['clockRate'] ?? 0,
             'channels': values['channels'] ?? 0,
@@ -1352,7 +1254,7 @@ class WebRTCConnectionManager {
 
       final overallScore = (latencyScore + qualityScore) / 2;
 
-      final diagnostics = {
+      final diagnostics = <String, dynamic>{
         'timestamp': DateTime.now().toIso8601String(),
         'overall_score': overallScore,
         'status': overallScore >= 75
@@ -1383,7 +1285,7 @@ class WebRTCConnectionManager {
       return diagnostics;
     } catch (e) {
       print('❌ Error running ElevenLabs diagnostics: $e');
-      return {'status': 'error', 'error': e.toString()};
+      return <String, dynamic>{'status': 'error', 'error': e.toString()};
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:audio_session/audio_session.dart'; // STEP 1: Add audio_session package
 import 'dart:async';
 import 'dart:io' show Platform;
 
@@ -69,7 +70,7 @@ class WebRTCAudioHandler {
   Function(double)? onAudioQualityChanged;
   Function(Map<String, dynamic>)? onAudioStatsUpdated;
 
-  // Enhanced audio constraints with advanced echo cancellation
+  // STEP 6: Updated ElevenLabs media constraints for better compatibility
   static const Map<String, dynamic> _enhancedAudioConstraints = {
     'audio': {
       'echoCancellation': true,
@@ -77,19 +78,13 @@ class WebRTCAudioHandler {
       'autoGainControl': true,
       'sampleRate': 16000,
       'channelCount': 1,
-      // Advanced echo cancellation settings
+      'latency': 0.020, // 20ms for stability
+      'bufferSize': 512, // Larger buffer for stability
+      // Remove Google-specific constraints that may not be supported
       'googEchoCancellation': true,
       'googAutoGainControl': true,
       'googNoiseSuppression': true,
       'googHighpassFilter': true,
-      'googTypingNoiseDetection': true,
-      'googAudioMirroring': false,
-      'googDAEchoCancellation': true,
-      'googAGCStartUpMinVolume': 12,
-      // Additional audio processing
-      'googEchoCancellation2': true,
-      'googAutoGainControl2': true,
-      'googNoiseSuppression2': true,
     },
     'video': false,
   };
@@ -309,7 +304,7 @@ class WebRTCAudioHandler {
     }
   }
 
-  /// Set remote audio stream with playback handling
+  /// STEP 5: Enhanced remote audio stream handling with proper playback
   Future<void> setRemoteStream(MediaStream stream) async {
     print('🎧 Setting remote stream (${stream.getTracks().length} tracks)');
 
@@ -333,23 +328,34 @@ class WebRTCAudioHandler {
         print('📺 Setting remote renderer source object...');
         _remoteRenderer!.srcObject = stream;
         print('   - Remote renderer source object set successfully');
-
-        // CRITICAL: For iOS, ensure the renderer is actively playing audio
-        if (Platform.isIOS) {
-          print('🍎 Ensuring iOS audio playback through remote renderer...');
-          try {
-            // Force audio playback by accessing the renderer's value
-            final rendererValue = _remoteRenderer!.value;
-            print(
-                '   - iOS remote renderer value accessed: ${rendererValue.width}x${rendererValue.height}');
-            print('   - iOS audio playback enabled through renderer access');
-          } catch (audioOutputError) {
-            print('⚠️ Failed to access iOS renderer value: $audioOutputError');
-            print('   - This may be expected during initialization');
-          }
-        }
       } else {
         print('⚠️ Remote renderer is null - cannot set source object');
+      }
+
+      // STEP 5: CRITICAL - Enable all remote audio tracks immediately
+      final audioTracks = stream.getAudioTracks();
+      for (final track in audioTracks) {
+        track.enabled = true;
+        print('✅ Force enabled remote audio track: ${track.id}');
+      }
+
+      // STEP 5: iOS-specific audio session activation for remote playback
+      if (Platform.isIOS) {
+        try {
+          final session = await AudioSession.instance;
+          await session.setActive(true);
+          
+          // Force audio to speakers if speaker mode is enabled
+          if (_isSpeakerOn) {
+            await session.configure(session.configuration!.copyWith(
+              avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.defaultToSpeaker |
+                  AVAudioSessionCategoryOptions.allowBluetooth,
+            ));
+          }
+          print('✅ iOS audio session activated for remote playback');
+        } catch (e) {
+          print('⚠️ iOS audio session activation failed: $e');
+        }
       }
 
       // Handle remote audio playback through system audio
@@ -403,34 +409,12 @@ class WebRTCAudioHandler {
             track.enabled = true;
             print('   - Audio track enabled successfully');
           }
-
-          // Apply mobile-specific audio processing
-          print('   - Applying mobile-specific audio processing...');
-          await _applyMobileAudioProcessing(track);
-          print('   - Mobile audio processing completed');
         }
 
         // Configure audio routing for optimal playback
         print('🎛️ Setting up system audio routing...');
         await _setupSystemAudioRouting();
         print('   - System audio routing configured');
-
-        // CRITICAL: iOS-specific audio playback activation
-        if (Platform.isIOS) {
-          print('🍎 Activating iOS audio session for WebRTC playback...');
-          try {
-            // Force audio session activation for playback
-            await WebRTC.invokeMethod('activateAudioSession', {
-              'force': true,
-              'category': 'playAndRecord',
-              'mode': 'videoChat'
-            });
-            print('   - iOS audio session activated for playback');
-          } catch (activationError) {
-            print('⚠️ iOS audio session activation failed: $activationError');
-            print('   - Continuing with default audio session');
-          }
-        }
 
         print('✅ Remote audio configured for playback');
 
@@ -440,11 +424,6 @@ class WebRTCAudioHandler {
           print(
               '   - Audio track after configuration: ${track.kind} (ID: ${track.id}, Enabled: ${track.enabled})');
         }
-
-        // Apply mobile-specific audio optimizations
-        print('📱 Applying mobile-specific audio optimizations...');
-        await _applyMobileAudioOptimizations();
-        print('   - Mobile audio optimizations completed');
 
         print('✅ Remote audio playback processing completed');
         print(
@@ -461,129 +440,6 @@ class WebRTCAudioHandler {
       print('   - Error timestamp: ${DateTime.now().toIso8601String()}');
       print('   - Stream ID: ${stream.id}');
       onError?.call('Failed to configure remote audio playback: $e');
-    }
-  }
-
-  /// Apply mobile-specific audio processing to audio tracks
-  Future<void> _applyMobileAudioProcessing(MediaStreamTrack track) async {
-    print('📱 Applying mobile-specific audio processing...');
-    print('   - Timestamp: ${DateTime.now().toIso8601String()}');
-    print('   - Track ID: ${track.id}');
-    print('   - Track kind: ${track.kind}');
-    print('   - Track enabled: ${track.enabled}');
-    print('   - Platform: ${Platform.operatingSystem}');
-
-    try {
-      if (Platform.isAndroid || Platform.isIOS) {
-        print('🔧 Configuring mobile audio processing parameters...');
-        print('   - Echo cancellation: true');
-        print('   - Noise suppression: true');
-        print('   - Auto gain control: true');
-        print('   - Highpass filter: true');
-        print('   - Mobile optimization: true');
-
-        try {
-          // Configure audio constraints for mobile
-          await WebRTC.invokeMethod('setAudioConfiguration', {
-            'mobileAudioProcessing': {
-              'echoCancellation': true,
-              'noiseSuppression': true,
-              'autoGainControl': true,
-              'highpassFilter': true,
-              'mobileOptimization': true,
-            }
-          });
-
-          print('✅ Mobile audio processing applied successfully');
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ Platform-specific audio configuration not available');
-            print('   - Using default WebRTC audio processing instead');
-            print(
-                '   - This is expected on some platforms and won\'t affect basic functionality');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
-
-        print(
-            '   - Processing completed at: ${DateTime.now().toIso8601String()}');
-      } else {
-        print('⚠️ Skipping mobile audio processing - not on mobile platform');
-      }
-    } catch (e) {
-      print('❌ Failed to apply mobile audio processing: $e');
-      print('   - Error type: ${e.runtimeType}');
-      print('   - Error timestamp: ${DateTime.now().toIso8601String()}');
-      print('   - Track ID: ${track.id}');
-      print('   - Platform: ${Platform.operatingSystem}');
-      // Don't call onError for missing plugin exceptions as they're expected
-      if (!e.toString().contains('MissingPluginException') &&
-          !e.toString().contains('No implementation found')) {
-        onError?.call('Failed to apply mobile audio processing: $e');
-      }
-    }
-  }
-
-  /// Apply mobile-specific audio optimizations
-  Future<void> _applyMobileAudioOptimizations() async {
-    print('📱 Applying mobile-specific audio optimizations...');
-    print('   - Timestamp: ${DateTime.now().toIso8601String()}');
-    print('   - Platform: ${Platform.operatingSystem}');
-
-    try {
-      if (Platform.isAndroid || Platform.isIOS) {
-        print('🔧 Configuring mobile audio optimization parameters...');
-        print('   - Buffer size: 256 (smaller buffer for lower latency)');
-        print('   - Sample rate: 16000 (optimal for voice)');
-        print('   - Processing mode: realTime');
-        print('   - Battery optimization: true');
-        print('   - CPU optimization: true');
-
-        try {
-          // Configure mobile-specific optimizations
-          await WebRTC.invokeMethod('setAudioConfiguration', {
-            'mobileOptimizations': {
-              'bufferSize': 256, // Smaller buffer for lower latency
-              'sampleRate': 16000, // Optimal for voice
-              'processingMode': 'realTime',
-              'batteryOptimization': true,
-              'cpuOptimization': true,
-            }
-          });
-
-          print('✅ Mobile audio optimizations applied successfully');
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ Platform-specific audio optimization not available');
-            print('   - Using default WebRTC audio settings instead');
-            print(
-                '   - This is expected on some platforms and won\'t affect basic functionality');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
-
-        print(
-            '   - Optimization completed at: ${DateTime.now().toIso8601String()}');
-      } else {
-        print(
-            '⚠️ Skipping mobile audio optimizations - not on mobile platform');
-      }
-    } catch (e) {
-      print('❌ Failed to apply mobile audio optimizations: $e');
-      print('   - Error type: ${e.runtimeType}');
-      print('   - Error timestamp: ${DateTime.now().toIso8601String()}');
-      print('   - Platform: ${Platform.operatingSystem}');
-      // Don't call onError for missing plugin exceptions as they're expected
-      if (!e.toString().contains('MissingPluginException') &&
-          !e.toString().contains('No implementation found')) {
-        onError?.call('Failed to apply mobile audio optimizations: $e');
-      }
     }
   }
 
@@ -608,30 +464,8 @@ class WebRTCAudioHandler {
         await _configureIOSAudioSession();
         print('   - iOS audio session configuration completed');
       } else {
-        print('🌐 Configuring default WebRTC audio for non-mobile platform...');
-        print('   - Applying echo cancellation: true');
-        print('   - Applying noise suppression: true');
-        print('   - Applying auto gain control: true');
-
-        try {
-          await WebRTC.invokeMethod('setAudioConfiguration', {
-            'echoCancellation': true,
-            'noiseSuppression': true,
-            'autoGainControl': true,
-          });
-          print('   - Default WebRTC audio configuration applied');
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ Platform-specific audio configuration not available');
-            print(
-                '   - Basic WebRTC will still function with default settings');
-            print('   - This is expected on some platforms');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
+        print('🌐 Using default WebRTC audio for non-mobile platform...');
+        print('   - Basic WebRTC functionality available');
       }
 
       print('✅ Audio session successfully configured for WebRTC');
@@ -695,77 +529,22 @@ class WebRTCAudioHandler {
     }
   }
 
-  /// Configure audio session for Android
+  /// STEP 4: Configure audio session for Android using audio_session package
   Future<void> _configureAndroidAudioSession() async {
     print('🤖 Starting Android audio session configuration...');
     print('   - Timestamp: ${DateTime.now().toIso8601String()}');
 
     try {
-      print('📋 Setting Android audio mode for communication...');
-      print('   - Audio mode: inCommunication');
-      print('   - Content type: speech');
-      print('   - Usage: voiceCommunication');
-      print('   - Flags: none');
-
-      try {
-        await WebRTC.invokeMethod('setAudioConfiguration', {
-          'android': {
-            'audioMode': 'inCommunication',
-            'audioAttributes': {
-              'contentType': 'speech',
-              'usage': 'voiceCommunication',
-              'flags': 'none'
-            }
-          }
-        });
-      } catch (methodException) {
-        // Handle missing platform implementation gracefully
-        if (methodException.toString().contains('MissingPluginException') ||
-            methodException.toString().contains('No implementation found')) {
-          print('⚠️ Android-specific audio configuration not available');
-          print('   - Using default WebRTC audio settings instead');
-          print(
-              '   - This is expected on some platforms and won\'t affect basic functionality');
-        } else {
-          rethrow; // Re-throw other exceptions
-        }
-      }
-
-      print('   - Android audio mode configuration applied successfully');
-
-      print('🔧 Configuring WebRTC audio processing for Android...');
-      print('   - Echo cancellation: true');
-      print('   - Noise suppression: true');
-      print('   - Auto gain control: true');
-      print('   - Highpass filter: true');
-      print('   - Typing noise detection: true');
-      print('   - Experimental auto gain control: true');
-      print('   - Experimental noise suppression: true');
-
-      try {
-        await WebRTC.invokeMethod('setAudioConfiguration', {
-          'echoCancellation': true,
-          'noiseSuppression': true,
-          'autoGainControl': true,
-          'highpassFilter': true,
-          'typingNoiseDetection': true,
-          'experimentalAutoGainControl': true,
-          'experimentalNoiseSuppression': true,
-        });
-      } catch (methodException) {
-        // Handle missing platform implementation gracefully
-        if (methodException.toString().contains('MissingPluginException') ||
-            methodException.toString().contains('No implementation found')) {
-          print('⚠️ Advanced Android audio processing not available');
-          print('   - Using default WebRTC audio processing instead');
-          print(
-              '   - This is expected on some platforms and won\'t affect basic functionality');
-        } else {
-          rethrow; // Re-throw other exceptions
-        }
-      }
-
-      print('   - WebRTC audio processing configuration applied successfully');
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration(
+        androidAudioAttributes: const AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.speech,
+          flags: AndroidAudioFlags.none,
+          usage: AndroidAudioUsage.voiceCommunication,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        androidWillPauseWhenDucked: false,
+      ));
 
       print('✅ Android audio session configured successfully');
       print(
@@ -778,77 +557,34 @@ class WebRTCAudioHandler {
     }
   }
 
-  /// Configure audio session for iOS
+  /// STEP 1: Configure audio session for iOS using audio_session package
   Future<void> _configureIOSAudioSession() async {
     print('🍎 Starting iOS audio session configuration...');
     print('   - Timestamp: ${DateTime.now().toIso8601String()}');
-
+    
     try {
-      print('📋 Setting iOS audio mode for communication...');
-      print('   - Category: playAndRecord');
-      print('   - Mode: videoChat');
-      print(
-          '   - Options: defaultToSpeaker, allowBluetooth, allowAirPlay, duckOthers');
-
-      try {
-        await WebRTC.invokeMethod('setAudioConfiguration', {
-          'ios': {
-            'category': 'playAndRecord',
-            'mode': 'videoChat',
-            'options': [
-              'defaultToSpeaker',
-              'allowBluetooth',
-              'allowAirPlay',
-              'duckOthers'
-            ]
-          }
-        });
-      } catch (methodException) {
-        // Handle missing platform implementation gracefully
-        if (methodException.toString().contains('MissingPluginException') ||
-            methodException.toString().contains('No implementation found')) {
-          print('⚠️ iOS-specific audio configuration not available');
-          print('   - Using default WebRTC audio settings instead');
-          print(
-              '   - This is expected on some platforms and won\'t affect basic functionality');
-        } else {
-          rethrow; // Re-throw other exceptions
-        }
-      }
-
-      print('   - iOS audio mode configuration applied successfully');
-
-      print('🔧 Configuring WebRTC audio processing for iOS...');
-      print('   - Echo cancellation: true');
-      print('   - Noise suppression: true');
-      print('   - Auto gain control: true');
-      print('   - Highpass filter: true');
-
-      try {
-        await WebRTC.invokeMethod('setAudioConfiguration', {
-          'echoCancellation': true,
-          'noiseSuppression': true,
-          'autoGainControl': true,
-          'highpassFilter': true,
-        });
-      } catch (methodException) {
-        // Handle missing platform implementation gracefully
-        if (methodException.toString().contains('MissingPluginException') ||
-            methodException.toString().contains('No implementation found')) {
-          print('⚠️ iOS audio processing configuration not available');
-          print('   - Using default WebRTC audio processing instead');
-          print(
-              '   - This is expected on some platforms and won\'t affect basic functionality');
-        } else {
-          rethrow; // Re-throw other exceptions
-        }
-      }
-
-      print('   - WebRTC audio processing configuration applied successfully');
-
-      print('✅ iOS audio session configured successfully');
-      print(
-          '   - Configuration completed at: ${DateTime.now().toIso8601String()}');
+      // Use audio_session package for proper iOS configuration
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+        avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.allowBluetooth |
+            AVAudioSessionCategoryOptions.defaultToSpeaker |
+            AVAudioSessionCategoryOptions.allowAirPlay,
+        avAudioSessionMode: AVAudioSessionMode.videoChat,
+        avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        androidAudioAttributes: const AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.speech,
+          flags: AndroidAudioFlags.none,
+          usage: AndroidAudioUsage.voiceCommunication,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        androidWillPauseWhenDucked: false,
+      ));
+      
+      await session.setActive(true);
+      print('✅ iOS audio session configured successfully with audio_session package');
+      print('   - Configuration completed at: ${DateTime.now().toIso8601String()}');
     } catch (e) {
       print('❌ Failed to configure iOS audio session: $e');
       print('   - Error type: ${e.runtimeType}');
@@ -891,47 +627,23 @@ class WebRTCAudioHandler {
     }
   }
 
-  /// Set up audio routing for Android
+  /// STEP 4: Set up audio routing for Android using audio_session
   Future<void> _setupAndroidAudioRouting() async {
     print('🤖 Starting Android audio routing setup...');
     print('   - Timestamp: ${DateTime.now().toIso8601String()}');
     print('   - Speaker enabled: $_isSpeakerOn');
 
     try {
-      print('📋 Configuring Android audio mode for communication...');
-      print('   - Audio mode: inCommunication');
-      print('   - Speakerphone on: $_isSpeakerOn');
-      print('   - Content type: speech');
-      print('   - Usage: voiceCommunication');
-
-      try {
-        await WebRTC.invokeMethod('setAudioConfiguration', {
-          'android': {
-            'audioMode': 'inCommunication',
-            'setSpeakerphoneOn': _isSpeakerOn,
-            'audioAttributes': {
-              'contentType': 'speech',
-              'usage': 'voiceCommunication',
-            }
-          }
-        });
-      } catch (methodException) {
-        // Handle missing platform implementation gracefully
-        if (methodException.toString().contains('MissingPluginException') ||
-            methodException.toString().contains('No implementation found')) {
-          print('⚠️ Android audio routing configuration not available');
-          print('   - Using default audio routing instead');
-          print('   - This is expected on some platforms');
-        } else {
-          rethrow; // Re-throw other exceptions
-        }
-      }
-
-      print('   - Android audio mode configuration applied successfully');
-
-      print('🔧 Configuring audio routing based on speaker preference...');
-      await _configureAudioOutput();
-      print('   - Audio routing configuration applied successfully');
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration(
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.speech,
+          usage: _isSpeakerOn 
+              ? AndroidAudioUsage.voiceCommunication 
+              : AndroidAudioUsage.voiceCommunication,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+      ));
 
       print('✅ Android audio routing configured successfully');
       print(
@@ -945,51 +657,24 @@ class WebRTCAudioHandler {
     }
   }
 
-  /// Set up audio routing for iOS
+  /// STEP 4: Set up audio routing for iOS using audio_session
   Future<void> _setupIOSAudioRouting() async {
     print('🍎 Starting iOS audio routing setup...');
     print('   - Timestamp: ${DateTime.now().toIso8601String()}');
     print('   - Speaker enabled: $_isSpeakerOn');
 
     try {
-      print('📋 Configuring iOS audio session for communication...');
-      print('   - Category: playAndRecord');
-      print('   - Mode: videoChat');
-      print(
-          '   - Options: ${_isSpeakerOn ? "defaultToSpeaker, allowBluetooth, allowAirPlay, duckOthers" : "allowBluetooth, allowAirPlay, duckOthers"}');
-
-      try {
-        await WebRTC.invokeMethod('setAudioConfiguration', {
-          'ios': {
-            'category': 'playAndRecord',
-            'mode': 'videoChat',
-            'options': _isSpeakerOn
-                ? [
-                    'defaultToSpeaker',
-                    'allowBluetooth',
-                    'allowAirPlay',
-                    'duckOthers'
-                  ]
-                : ['allowBluetooth', 'allowAirPlay', 'duckOthers']
-          }
-        });
-      } catch (methodException) {
-        // Handle missing platform implementation gracefully
-        if (methodException.toString().contains('MissingPluginException') ||
-            methodException.toString().contains('No implementation found')) {
-          print('⚠️ iOS audio routing configuration not available');
-          print('   - Using default audio routing instead');
-          print('   - This is expected on some platforms');
-        } else {
-          rethrow; // Re-throw other exceptions
-        }
-      }
-
-      print('   - iOS audio session configuration applied successfully');
-
-      print('🔧 Configuring audio routing based on speaker preference...');
-      await _configureAudioOutput();
-      print('   - Audio routing configuration applied successfully');
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+        avAudioSessionCategoryOptions: _isSpeakerOn
+            ? AVAudioSessionCategoryOptions.defaultToSpeaker |
+                AVAudioSessionCategoryOptions.allowBluetooth |
+                AVAudioSessionCategoryOptions.allowAirPlay
+            : AVAudioSessionCategoryOptions.allowBluetooth |
+                AVAudioSessionCategoryOptions.allowAirPlay,
+        avAudioSessionMode: AVAudioSessionMode.videoChat,
+      ));
 
       print('✅ iOS audio routing configured successfully');
       print(
@@ -1092,7 +777,7 @@ class WebRTCAudioHandler {
         print(
             '   - Pausing track: ${track.kind} (ID: ${track.id}, Enabled: ${track.enabled})');
         track.enabled = false;
-        print('     - Track disabled successfully');
+        print('   - Track disabled successfully');
       }
 
       // Cancel any pending resume timer
@@ -1160,7 +845,7 @@ class WebRTCAudioHandler {
             print(
                 '   - Resuming track: ${track.kind} (ID: ${track.id}, Enabled: ${track.enabled})');
             track.enabled = true;
-            print('     - Track enabled successfully');
+            print('   - Track enabled successfully');
           }
 
           print('✅ Microphone resumed successfully - agent finished speaking');
@@ -1222,7 +907,7 @@ class WebRTCAudioHandler {
           print(
               '   - Setting track: ${track.kind} (ID: ${track.id}) to ${!muted ? 'enabled' : 'disabled'}');
           track.enabled = !muted;
-          print('     - Track state applied successfully');
+          print('   - Track state applied successfully');
         }
       } else {
         print(
@@ -1317,69 +1002,15 @@ class WebRTCAudioHandler {
     print('   - Speaker enabled: $_isSpeakerOn');
 
     try {
-      if (_isSpeakerOn) {
-        print('🔊 Routing audio to speaker on Android...');
-        print('   - Audio mode: inCommunication');
-        print('   - Speakerphone on: true');
-        print('   - Content type: speech');
-        print('   - Usage: voiceCommunication');
-
-        try {
-          await WebRTC.invokeMethod('setAudioConfiguration', {
-            'android': {
-              'audioMode': 'inCommunication',
-              'setSpeakerphoneOn': true,
-              'audioAttributes': {
-                'contentType': 'speech',
-                'usage': 'voiceCommunication',
-              }
-            }
-          });
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ Android speaker configuration not available');
-            print('   - Using default audio routing instead');
-            print('   - This is expected on some platforms');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
-
-        print('   - Audio routed to speaker successfully');
-      } else {
-        print('🎧 Routing audio to earpiece on Android...');
-        print('   - Audio mode: inCommunication');
-        print('   - Speakerphone on: false');
-        print('   - Content type: speech');
-        print('   - Usage: voiceCommunication');
-
-        try {
-          await WebRTC.invokeMethod('setAudioConfiguration', {
-            'android': {
-              'audioMode': 'inCommunication',
-              'setSpeakerphoneOn': false,
-              'audioAttributes': {
-                'contentType': 'speech',
-                'usage': 'voiceCommunication',
-              }
-            }
-          });
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ Android earpiece configuration not available');
-            print('   - Using default audio routing instead');
-            print('   - This is expected on some platforms');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
-
-        print('   - Audio routed to earpiece successfully');
-      }
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration(
+        androidAudioAttributes: AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.speech,
+          usage: _isSpeakerOn 
+              ? AndroidAudioUsage.media
+              : AndroidAudioUsage.voiceCommunication,
+        ),
+      ));
 
       print('✅ Android audio output configured successfully');
       print(
@@ -1400,67 +1031,17 @@ class WebRTCAudioHandler {
     print('   - Speaker enabled: $_isSpeakerOn');
 
     try {
-      if (_isSpeakerOn) {
-        print('🔊 Routing audio to speaker on iOS...');
-        print('   - Category: playAndRecord');
-        print('   - Mode: videoChat');
-        print(
-            '   - Options: defaultToSpeaker, allowBluetooth, allowAirPlay, duckOthers');
-
-        try {
-          await WebRTC.invokeMethod('setAudioConfiguration', {
-            'ios': {
-              'category': 'playAndRecord',
-              'mode': 'videoChat',
-              'options': [
-                'defaultToSpeaker',
-                'allowBluetooth',
-                'allowAirPlay',
-                'duckOthers'
-              ]
-            }
-          });
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ iOS speaker configuration not available');
-            print('   - Using default audio routing instead');
-            print('   - This is expected on some platforms');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
-
-        print('   - Audio routed to speaker successfully');
-      } else {
-        print('🎧 Routing audio to earpiece on iOS...');
-        print('   - Category: playAndRecord');
-        print('   - Mode: videoChat');
-        print('   - Options: allowBluetooth, allowAirPlay, duckOthers');
-
-        try {
-          await WebRTC.invokeMethod('setAudioConfiguration', {
-            'ios': {
-              'category': 'playAndRecord',
-              'mode': 'videoChat',
-              'options': ['allowBluetooth', 'allowAirPlay', 'duckOthers']
-            }
-          });
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ iOS earpiece configuration not available');
-            print('   - Using default audio routing instead');
-            print('   - This is expected on some platforms');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
-
-        print('   - Audio routed to earpiece successfully');
-      }
+      final session = await AudioSession.instance;
+      await session.configure(AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+        avAudioSessionCategoryOptions: _isSpeakerOn
+            ? AVAudioSessionCategoryOptions.defaultToSpeaker |
+                AVAudioSessionCategoryOptions.allowBluetooth |
+                AVAudioSessionCategoryOptions.allowAirPlay
+            : AVAudioSessionCategoryOptions.allowBluetooth |
+                AVAudioSessionCategoryOptions.allowAirPlay,
+        avAudioSessionMode: AVAudioSessionMode.videoChat,
+      ));
 
       print('✅ iOS audio output configured successfully');
       print(
@@ -1472,6 +1053,101 @@ class WebRTCAudioHandler {
       print('   - Speaker enabled: $_isSpeakerOn');
       rethrow;
     }
+  }
+
+  /// STEP 8: Stream synchronization helper
+  Future<void> syncAudioStreams() async {
+    print('🔄 Synchronizing audio streams...');
+    
+    try {
+      // Ensure local stream is active
+      if (_localStream != null) {
+        for (final track in _localStream!.getAudioTracks()) {
+          track.enabled = !_isMuted && !_isAgentSpeaking;
+        }
+      }
+      
+      // Ensure remote stream is active
+      if (_remoteStream != null) {
+        for (final track in _remoteStream!.getAudioTracks()) {
+          track.enabled = true;
+        }
+        
+        // Set up proper audio session for playback
+        if (Platform.isIOS) {
+          final session = await AudioSession.instance;
+          await session.setActive(true);
+        }
+      }
+      
+      print('✅ Audio streams synchronized successfully');
+    } catch (e) {
+      print('❌ Failed to sync audio streams: $e');
+      onError?.call('Failed to sync audio streams: $e');
+    }
+  }
+
+  /// STEP 9: Audio recovery mechanism
+  Future<void> recoverAudioConnection() async {
+    print('🚨 Attempting audio connection recovery...');
+    
+    try {
+      // Reset audio session
+      if (Platform.isIOS) {
+        final session = await AudioSession.instance;
+        await session.setActive(false);
+        await session.setActive(true);
+      }
+      
+      // Re-sync audio streams
+      await syncAudioStreams();
+      
+      // Re-enable audio tracks
+      emergencyActivateMicrophone();
+      
+      print('✅ Audio connection recovery completed');
+    } catch (e) {
+      print('❌ Audio recovery failed: $e');
+    }
+  }
+
+  /// STEP 10 & 11: Comprehensive audio debugging
+  Future<void> debugAudioState() async {
+    print('🔍 === AUDIO DEBUG STATE ===');
+    print('Local Stream: ${_localStream?.id ?? 'null'}');
+    print('Remote Stream: ${_remoteStream?.id ?? 'null'}');
+    print('Muted: $_isMuted');
+    print('Speaker On: $_isSpeakerOn');
+    print('Agent Speaking: $_isAgentSpeaking');
+    print('Initialized: $_isInitialized');
+    print('Disposed: $_isDisposed');
+    
+    if (_localStream != null) {
+      for (final track in _localStream!.getAudioTracks()) {
+        print('Local Audio Track: ${track.id} - Enabled: ${track.enabled}');
+      }
+    }
+    
+    if (_remoteStream != null) {
+      for (final track in _remoteStream!.getAudioTracks()) {
+        print('Remote Audio Track: ${track.id} - Enabled: ${track.enabled}');
+      }
+    }
+    
+    // Check audio session state
+    if (Platform.isIOS) {
+      try {
+        final session = await AudioSession.instance;
+        // audio_session does not expose a direct `active` getter across versions;
+        // print whether the session has been configured instead of calling a non-existent getter.
+        print('iOS Audio Session Configured: ${session.configuration != null}');
+        print('iOS Audio Session Category: ${session.configuration?.avAudioSessionCategory}');
+      } catch (e) {
+        print('iOS Audio Session Error: $e');
+      }
+    }
+    
+    print('🔍 === END DEBUG STATE ===');
   }
 
   /// Start comprehensive audio level monitoring
@@ -1642,7 +1318,7 @@ class WebRTCAudioHandler {
 
   /// Get comprehensive audio statistics
   Map<String, dynamic> getAudioStats() {
-    return {
+    return <String, dynamic>{
       'inputLevel': _inputLevel,
       'outputLevel': _outputLevel,
       'isMuted': _isMuted,
@@ -1687,31 +1363,6 @@ class WebRTCAudioHandler {
       final clampedVolume = volume.clamp(0.0, 2.0);
       _inputVolume = clampedVolume;
 
-      if (_localStream != null) {
-        final audioTracks = _localStream!.getAudioTracks();
-        for (final track in audioTracks) {
-          try {
-            await WebRTC.invokeMethod('setTrackVolume', {
-              'trackId': track.id,
-              'volume': clampedVolume,
-              'type': 'input'
-            });
-          } catch (methodException) {
-            // Handle missing platform implementation gracefully
-            if (methodException.toString().contains('MissingPluginException') ||
-                methodException
-                    .toString()
-                    .contains('No implementation found')) {
-              print('⚠️ Volume control not available for track ${track.id}');
-              print('   - Using default volume settings instead');
-              print('   - This is expected on some platforms');
-            } else {
-              rethrow; // Re-throw other exceptions
-            }
-          }
-        }
-      }
-
       onInputVolumeChanged?.call(_inputVolume);
       print('✅ Input volume set to: $_inputVolume');
     } catch (e) {
@@ -1734,31 +1385,6 @@ class WebRTCAudioHandler {
     try {
       final clampedVolume = volume.clamp(0.0, 2.0);
       _outputVolume = clampedVolume;
-
-      if (_remoteStream != null) {
-        final audioTracks = _remoteStream!.getAudioTracks();
-        for (final track in audioTracks) {
-          try {
-            await WebRTC.invokeMethod('setTrackVolume', {
-              'trackId': track.id,
-              'volume': clampedVolume,
-              'type': 'output'
-            });
-          } catch (methodException) {
-            // Handle missing platform implementation gracefully
-            if (methodException.toString().contains('MissingPluginException') ||
-                methodException
-                    .toString()
-                    .contains('No implementation found')) {
-              print('⚠️ Volume control not available for track ${track.id}');
-              print('   - Using default volume settings instead');
-              print('   - This is expected on some platforms');
-            } else {
-              rethrow; // Re-throw other exceptions
-            }
-          }
-        }
-      }
 
       onOutputVolumeChanged?.call(_outputVolume);
       print('✅ Output volume set to: $_outputVolume');
@@ -1893,29 +1519,6 @@ class WebRTCAudioHandler {
       if (echoCancellationLevel != null)
         _echoCancellationLevel = echoCancellationLevel.clamp(0.0, 1.0);
 
-      if (_localStream != null) {
-        try {
-          await WebRTC.invokeMethod('configureAudioProcessing', {
-            'echoCancellation': _echoCancellationEnabled,
-            'noiseSuppression': _noiseSuppressionEnabled,
-            'autoGainControl': _autoGainControlEnabled,
-            'noiseSuppressionLevel': _noiseSuppressionLevel,
-            'echoCancellationLevel': _echoCancellationLevel,
-          });
-        } catch (methodException) {
-          // Handle missing platform implementation gracefully
-          if (methodException.toString().contains('MissingPluginException') ||
-              methodException.toString().contains('No implementation found')) {
-            print('⚠️ Advanced audio processing configuration not available');
-            print('   - Using default WebRTC audio processing instead');
-            print(
-                '   - This is expected on some platforms and won\'t affect basic functionality');
-          } else {
-            rethrow; // Re-throw other exceptions
-          }
-        }
-      }
-
       print('✅ Audio processing effects configured');
     } catch (e) {
       print('❌ Failed to configure audio processing: $e');
@@ -1992,15 +1595,15 @@ class WebRTCAudioHandler {
       print('🗑️ Disposing audio components...');
       print('   - Disposing audio player...');
       await _audioPlayer?.dispose();
-      print('     - Audio player disposed');
+      print('   - Audio player disposed');
 
       print('   - Disposing local renderer...');
       _localRenderer?.dispose();
-      print('     - Local renderer disposed');
+      print('   - Local renderer disposed');
 
       print('   - Disposing remote renderer...');
       _remoteRenderer?.dispose();
-      print('     - Remote renderer disposed');
+      print('   - Remote renderer disposed');
 
       // Clear streams (managed by connection manager)
       print('🧼 Clearing stream references...');
